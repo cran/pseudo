@@ -1,0 +1,11 @@
+6ec398239a39e54aab253ebed88b179a *DESCRIPTION
+63ae990712a55218da26c4bc956880ce *R/ci.omit.R
+c6619357ff2215c0f9d5ad096f32345b *R/ci.tot.R
+0aec42b7eda608e866dea8cd18238043 *R/pseudoci.R
+4df57e4c770446642d01dd1949ff0264 *R/pseudomean.R
+660e1fd74802e813b96860a488705664 *R/pseudosurv.R
+16fbd1727c3713a57f2792b383f452e2 *R/surv.omit.R
+c34e38857a0bbce9fd2806518eff3ff7 *R/surv.tot.R
+e1ff58894b7a489a48036f974c5c1c6f *man/pseudoci.Rd
+b9bf1e229378da40324832abbc27d0da *man/pseudomean.Rd
+4b72ec09caafd0234fb4de4aa2e3798c *man/pseudosurv.Rd
