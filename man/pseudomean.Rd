@@ -21,11 +21,15 @@ replaced by the maximum follow up time.
 \details{
 The function calculates the pseudo-observations for the restricted mean survival for each individual at prespecified time-points.
 The pseudo-observations can be used for fitting a regression model with a generalized estimating equation.
+No missing values in either \code{time} or \code{event}
+vector are allowed.
+
+Please note that the output of the function has changed and the usage is thus no longer the same as in the reference paper - the new usage is described in the example below.
+
 }
 
 \value{
-A data frame. The first two columns contain the follow up time and the status indicator as given by the user. The third
-column presents the computed pseudo-observations.
+A vector of pseudo-observations for each individual.
 }
 
 
@@ -37,7 +41,7 @@ data(bmt)
 pseudo = pseudomean(time=bmt$t2, event=bmt$d3,tmax=2000)
 
 #arrange the data
-a <- cbind(bmt,pseudo = pseudo$psumean,id=1:nrow(bmt))
+a <- cbind(bmt,pseudo = pseudo,id=1:nrow(bmt))
 
 #fit a regression model for the mean time
 
@@ -55,9 +59,8 @@ round(cbind(mean = fit$beta,SD = sqrt(diag(fit$vbeta.ajs)),
 
 
 \references{
-Klein J.P., Gerster M., Andersen P.K., Tarima S.: "SAS and R Functions to Compute Pseudo-values for Censored Data Regression." \emph{Department of Biostatistics, University of Copenhagen,} research report 07/11.
+Klein J.P., Gerster M., Andersen P.K., Tarima S., POHAR PERME, M.: "SAS and R Functions to Compute Pseudo-values for Censored Data Regression." \emph{Comput. methods programs biomed.}, 2008, 89 (3): 289-300 
 }
-
 
 
 

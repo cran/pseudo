@@ -1,7 +1,5 @@
 \name{pseudosurv}
 \alias{pseudosurv}
-\alias{surv.tot}
-\alias{surv.omit}
 
 \title{Pseudo-observations for the Kaplan-Meier estimate}
 \description{Computes pseudo-observations for modeling survival function based on the Kaplan-Meier estimator.
@@ -23,11 +21,18 @@ reported at each event time.
 \details{
 The function calculates the pseudo-observations for the value of the survival function at prespecified time-points for each individual.
 The pseudo-observations can be used for fitting a regression model with a generalized estimating equation.
+No missing values in either \code{time} or \code{event}
+vector are allowed.
+
+Please note that the output of the function has changed and the usage is thus no longer the same as in the reference paper - the new usage is described in the example below.
+Similar (faster) version of the function is available in the R-package prodlim (\code{jackknife}).
 }
 
 \value{
-A data frame. The first two columns contain the follow up time and the status indicator as given by the user. The following
-columns present the pseudo-observations for each of the required (sorted) time points.
+A list containing the following objects:
+\item{time}{The ordered time points at which the pseudo-observations are evaluated.}
+\item{pseudo}{A matrix. Each row belongs to one individual (ordered as in the original data set),
+ each column presents a time point (ordered in time). }
 }
 
 \examples{
@@ -38,13 +43,16 @@ data(bmt)
 cutoffs <- c(50,105,170,280,530)
 pseudo <- pseudosurv(time=bmt$t2,event=bmt$d3,tmax=cutoffs)
 
-#rearrange the data
+
+#rearrange the data into a long data set
 b <- NULL
-for(j in 3:ncol(pseudo)){
-	b <- rbind(b,cbind(bmt,pseudo=pseudo[,j],tpseudo=cutoffs[j-2],
-	     id=1:nrow(bmt)))
+for(it in 1:length(pseudo$time)){
+	b <- rbind(b,cbind(bmt,pseudo = pseudo$pseudo[,it],
+	     tpseudo = pseudo$time[it],id=1:nrow(bmt)))
 }
 b <- b[order(b$id),]
+
+
 
 #fit a Cox model using GEE
 library(geepack)
@@ -59,14 +67,14 @@ round(cbind(mean = fit$beta,SD = sqrt(diag(fit$vbeta.ajs)),
 }
 
 \references{
-Klein J.P., Gerster M., Andersen P.K., Tarima S.: "SAS and R Functions to Compute Pseudo-values for Censored Data Regression." \emph{Department of Biostatistics, University of Copenhagen,} research report 07/11.
+Klein J.P., Gerster M., Andersen P.K., Tarima S., POHAR PERME, M.: "SAS and R Functions to Compute Pseudo-values for Censored Data Regression." \emph{Comput. methods programs biomed.}, 2008, 89 (3): 289-300 
 }
-
 
 
 \seealso{
 \code{\link{pseudomean}},
-\code{\link{pseudoci}}
+\code{\link{pseudoci}},
+\code{\link{pseudoyl}}
 }
 
 \keyword{survival}

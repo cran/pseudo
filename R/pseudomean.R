@@ -4,7 +4,7 @@ function(time, event, tmax){
 	if(any(is.na(time)))
 		stop("missing values in 'time' vector")
 		
-	if(any(time)<0)
+	if(any(time<0))
 		stop("'time' must be nonnegative")
 	
 	if(any(is.na(event)))
@@ -16,33 +16,28 @@ function(time, event, tmax){
 	if(missing(tmax)) 
 		tmax <- max(time[event==1])
 
+	if(length(tmax)>1)
+		stop("Only one value should be specified for 'tmax' - the maximum time")
+
 	if(is.na(tmax))
 		stop("missing value of 'tmax'")
 
 	
-	rmtime <- ifelse(time >= tmax ,tmax,time)
-	rmdead <- ifelse(time >= tmax ,0, event)
+	rmtime <- ifelse(time >= tmax ,tmax,time)			#if times are greater than tmax, set them to tmax
+	rmdead <- ifelse(time > tmax ,0, event)			#if times are greater than tmax, set censoring status to 0
 
 	if(sum(rmdead)==0)
 		stop("no events occured before time 'tmax'")
     
 	howmany <- length(rmtime)
     	
-    
-	## preparing the output
-    	pseudo <- as.data.frame(matrix(data = NA, ncol = 6, nrow = howmany))
-    	pseudo[,1] <- 1:howmany
-    	pseudo[,2] <- rmtime
-    	pseudo[,3] <- time
-    	pseudo[,4] <- event
-    	pseudo[,5] <- rmdead
-    	names(pseudo) <- c("id","time","timet","eventt","event","psumean")
-    
-    	# sort in time
-    	pseudo <- pseudo[order(pseudo$time,-pseudo$event),]
-	 
-    
-	# RM, leave one out
+    	## preparing the data
+  	pseudo <- data.frame(id=1:howmany,time=rmtime,event=rmdead)
+  
+  	# sort in time, if tied, put events before censoring
+  	pseudo <- pseudo[order(pseudo$time,-pseudo$event),]
+
+    	# RM, leave one out
 	RM.omit <- surv.omit(pseudo,tmax)
 	
 	#RM, all cases
@@ -52,10 +47,8 @@ function(time, event, tmax){
 	pseu <- howmany*RM.tot - (howmany-1)*RM.omit
 
 	#back to original order
-	pseudo[,-(1:5)] <- pseu
-	pseudo <- pseudo[order(pseudo$id),]
-	pseudo <- pseudo[,-c(1,2,5)]
-	names(pseudo)[1:2] <- c("time","event")
-	return(pseudo)    
+	pseu <- pseu[order(pseudo$id)]
+
+	return(pseu)    
 }
 

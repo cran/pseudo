@@ -1,0 +1,4 @@
+pseudoci 		Pseudo-observations for the cumulative incidence function 
+pseudomean		Pseudo-observations for the restricted mean 
+pseudosurv		Pseudo-observations for the Kaplan-Meier estimate 
+pseudoyl 		Pseudo-observations for the expected number of years lost 

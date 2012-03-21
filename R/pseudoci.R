@@ -4,14 +4,14 @@ function(time, event, tmax){
 	if(any(is.na(time)))
 		stop("missing values in 'time' vector")
 		
-	if(any(time)<0)
+	if(any(time<0))
 		stop("'time' must be nonnegative")
 	
 	if(any(is.na(event)))
 		stop("missing values in 'event' vector")
 	
-	if(any(event!=0 & event!=1 & event!=2))
-		stop("'event' must be a 0/1/2 variable (alive/cause 1/cause 2)")
+	if(any(event<0))
+		stop("Events should be denoted by integer values, 0 is used for censoring")
 		
 	if(missing(tmax)) 
 		tmax <- unique(time[event!=0])
@@ -22,45 +22,45 @@ function(time, event, tmax){
 	if (sum(tmax > max(time)) > 0) 
 	   stop ("tmax greater than largest observation time")
    
-	tmax <- sort(tmax)
-	ltmax <- length(tmax)
-	howmany <- length(time)
+	tmax <- sort(tmax)				#times for evaluation
+	ltmax <- length(tmax)				#number of times for evaluation
+	howmany <- length(time)				#number of individuals
+	
+	causes <- sort(unique(event[event!=0]))	#distinct codes for causes (censorings excluded)
+	ncauses <- length(causes)			#number of causes
+	
+	pseudo <- data.frame(id=1:howmany,time=time,event=event)
+	# sort in time, put events before censorings (if happening simultaneously)
+	pseudo <- pseudo[order(pseudo$time, -pseudo$event), ]
 
-	# preparing the output
-	pseudo <- as.data.frame(matrix(data = NA, ncol = 2*ltmax+3, nrow = howmany))
-	pseudo[,1] <- 1:howmany
-	pseudo[,2] <- time
-	pseudo[,3] <- event
-	
-	names(pseudo) <- c("id","time", "event", paste(rep(c("r1","r2"),ltmax),rep(round(tmax,3),each=2),sep=",t="))
-	
-	# sort in time
-	pseudo <- pseudo[order(pseudo$time,-pseudo$event),]
 	
 	# time points chosen	
-	tu <- unique(pseudo$time[pseudo$event!=0])
-	ltu <- length(tu)
-	tu <- matrix(tu,byrow=TRUE,ncol=ltu,nrow=ltmax)
-	tgiven <- matrix(tmax,byrow=FALSE,ncol=ltu,nrow=ltmax)
-	inx <- apply(tgiven>=tu,1,sum)
+	tu <- unique(pseudo$time[pseudo$event!=0])			#unique time of failures
+	ltu <- length(tu)						#number of unique times of failures
+	tu <- matrix(tu,byrow=TRUE,ncol=ltu,nrow=ltmax)			#matrix: unique times of failures in each row, (each evaluation time) x (each failure time) 
+	tgiven <- matrix(tmax,byrow=FALSE,ncol=ltu,nrow=ltmax)		#matrix: evaluation times in columns, (each evaluation time) x (each failure time)  
+	inx <- apply(tgiven>=tu,1,sum)					#for each evaluation time: the number of events before it
 
 	# CI, leave one out
-	pseu <- ci.omit(pseudo)
-	CI1 <- pseu$C1[,inx,drop=FALSE]
-	CI2 <- pseu$C2[,inx,drop=FALSE]
-	CI.omit <- matrix(rbind(CI1,CI2),ncol=2*ltmax,nrow=nrow(CI1))
-
-	# CI, all cases
-	CI.tot <- ci.tot(pseudo)[,inx]
-	CI.tot <- matrix(CI.tot,byrow=TRUE,ncol=2*ltmax,nrow=howmany)
+	pseu <- ci.omit(pseudo,causes=causes)						#calculate the values of CI functions for 'leave one out'
+	pseut <- ci.tot(pseudo,causes=causes)						#calculate the values of CI for the whole sample
 	
-      	## Pseudo-observations
-      	pseudo[,4:(3+2*ltmax)] <- howmany*CI.tot - (howmany-1)*CI.omit
-
-	#back to original order
-   	pseudo <- pseudo[order(pseudo$id),]
-   	pseudo <- pseudo[,-1]
+	out <- NULL
+	out$time <- tmax
+	out$cause <- causes
+	out$pseudo <- list(rep(NA,ncauses))
 	
-	return(pseudo)
+	for(jt in 1:ncauses){						#for each cause
+		ci <- pseu[[jt]][,inx,drop=FALSE]				#only at times for evaluation								
+		citot <- matrix(pseut[[jt]][inx],byrow=TRUE,ncol=ncol(ci),nrow=nrow(ci))	#only at time for evaluation, put in the same format as the 'leave one out'
+		ps <- as.data.frame(howmany*citot - (howmany-1)*ci)			#pseudo values calculation	
+		row.names(ps) <- pseudo$id
+		names(ps) <- paste("time",tmax,sep=".")
+		out$pseudo[[jt]] <- as.matrix(ps[order(pseudo$id),])		#back to original order
+		
+		
+	}
+	names(out$pseudo) <- paste("cause",causes,sep="")
+	out
 }
 

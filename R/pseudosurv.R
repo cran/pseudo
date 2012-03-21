@@ -4,7 +4,7 @@ function(time, event, tmax){
 	if(any(is.na(time)))
 		stop("missing values in 'time' vector")
 		
-	if(any(time)<0)
+	if(any(time<0))
 		stop("'time' must be nonnegative")
 	
 	if(any(is.na(event)))
@@ -27,14 +27,10 @@ function(time, event, tmax){
 	howmany <- length(time)
 	
 
-	## preparing the output
-	pseudo <- as.data.frame(matrix(data = NA, ncol = length(tmax)+3, nrow = howmany))
-	pseudo[,1] <- 1:howmany
-	pseudo[,2] <- time
-	pseudo[,3] <- event
-	names(pseudo) <- c("id","time", "event",paste("tmax =", round(tmax,3), sep=""))
+	## preparing the data
+	pseudo <- data.frame(id=1:howmany,time=time,event=event)
 
-	# sort in time
+	# sort in time, if tied, put events before censoring
 	pseudo <- pseudo[order(pseudo$time,-pseudo$event),]
 
 	# time points chosen	
@@ -55,11 +51,15 @@ function(time, event, tmax){
 	# pseudo-observations
 	pseu <- howmany*KM.tot - (howmany-1)*KM.omit
 	
+	pseu <- as.data.frame(pseu)
+	row.names(pseu) <- pseudo$id
+	names(pseu) <- 	paste("time",tmax,sep=".")
+	
 	# back to original order
-	pseudo[,-(1:3)] <- pseu
-	pseudo <- pseudo[order(pseudo$id),]
-	pseudo <- pseudo[,-1]
-	return(pseudo)
+	out <- NULL
+	out$time <- tmax
+	out$pseudo <- as.matrix(pseu[order(pseudo$id),])		#back to original order
+	return(out)
 
 }
 

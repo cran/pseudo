@@ -1,40 +1,56 @@
 "ci.tot" <-
-function(pseudo){
+function(pseudo,tmax,causes){
 	#calculate cum. inc. function, all cases
+	#current ties handling: if two individuals fail at the same time, we split ties (use original ordering)
+	#tmax: needed only for area under CI, if specified, area is reported
 	
-	howmany <- nrow(pseudo)
 	
-	d1 <- as.numeric(pseudo$event==1)
-	d2 <- as.numeric(pseudo$event==2)
-	event <- as.numeric(pseudo$event>0)
+	howmany <- nrow(pseudo)				#number of individuals
 	
-	td <- pseudo$time[event==1]
-	lt.temp <- c(td[-1],td[length(td)]+1)
-	lt <- which(td!=lt.temp)
-	
-	#km - i
-	Y <- howmany:1
-	N <- event
-	N1 <- d1
-	N2 <- d2
-	cum1 <- N1/Y
-	
-	cum2 <- N2/Y
-	
-	kmji <- (Y-N)/Y
+	ncauses <- length(causes)			#number of causes
 		
-	km <- cumprod(kmji)
+	di <- matrix(NA,nrow=howmany,ncol=ncauses)
+	for(jt in 1:ncauses)di[,jt] <- as.numeric(pseudo$event==causes[jt])		#indicator of  events due to certain cause
+
+	event <- as.numeric(pseudo$event!=0)		#indicator of any event	
 	
-	km <- c(1,km[-length(km)])
+	td <- pseudo$time[event==1]			#times of events (any event)
+	lt.temp <- c(td[-1],td[length(td)]+1)
+	lt <- which(td!=lt.temp)			#in ties, use only the last value
+
+	#km - i
+	Y <- howmany:1					
+	N <- event
 	
-	C1 <- cumsum(cum1*km)
-	C2 <- cumsum(cum2*km)
+	cumi <- list(rep(NA,ncauses))
+	for(jt in 1:ncauses)cumi[[jt]] <- di[,jt]/Y			#each line: hazard at each time, i excluded
 	
-	#only for deaths, one value per tie
-	C1 <- C1[event==1]
-	C1 <- C1[lt]
-	C2 <- C2[event==1]
-	C2 <- C2[lt]
-	rbind(C1,C2)
+	kmji <- (Y-N)/Y					#1- dN/Y
+		
+	km <- cumprod(kmji)				#Kaplan-Meier at each time 
+	
+	km <- c(1,km[-length(km)])			#KM at t- (just before that time)
+	
+	if(!missing(tmax)){				
+		tt <- pseudo$time[pseudo$event>0]
+		tt <- tt[lt]
+		tt <- c(tt,tmax)
+		tt <- diff(tt)				#difference between times
+	}
+
+	CI <- list(rep(NA,ncauses))
+	
+	for(jt in 1:ncauses){
+	
+		cit <- cumsum(cumi[[jt]]*km)				#cuminc: cumsum(S(t-)*hazard)
+
+		#only for deaths, one value per tie
+		cit <- cit[event==1]
+		cit <- cit[lt]
+	
+		if(!missing(tmax))cit <- sum(cit*tt)
+		CI[[jt]] <- cit
+	}
+CI
 }
 
